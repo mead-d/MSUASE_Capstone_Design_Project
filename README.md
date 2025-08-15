@@ -1,0 +1,1 @@
+A discrete event simulator specification (adevs) used for this project is copyrighted (c) 2013 by James Nutaro at Oak Ridge National Laboratory. Use of adevs for this capstone design project is permitted.
