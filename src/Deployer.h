@@ -36,6 +36,14 @@
  #include <stdlib.h>
  #include <vector>
 
+ // State structure of deployment carrier
+ typedef enum
+ {
+    EVACUATING, // Deploying nodes
+    STANDBY     // Preparing for next load
+ }
+ DeployerState;
+
  /**
   * @brief The deployer is the mechanism that creates and drops autonomous nodes off in the environment en masse.
   * The deployer will also drop off replacement nodes.
@@ -62,17 +70,21 @@ class Deployer: public adevs::Atomic<int>
         double ta();
         // Garbage collection
         void gc_output(adevs::Bag<int>&);
+
+        DeployerState getState();
+    protected:
+        // State of the deployer
+        DeployerState state;
     private:
         //adevs::rv seed;
         // Time until next action
-        double time = 1.0;
+        double delta_time = 1.0;
         // Environment dimensions
         int env_length, env_width;
         // List and Num of nodes to deploy
         //std::vector<Autonode*> nodeList;
         std::vector<int> formation;
         int nNodes = 6;
-        int nodeID;
 };
 
 #endif

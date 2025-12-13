@@ -38,80 +38,45 @@ using namespace std;
 
 Autonode::Autonode(int id, int x, int y, std::vector<int> formation):Atomic<int>(),
 id(id),
-x_pos(x),
-y_pos(y),
 formation(formation)
-{forming=true;}
+{
+    state=DEPLOYING;
+    start_pos[0] = x;
+    start_pos[1] = y;
+}
 
 // Internal transition function.
 void Autonode::delta_int()
 {
     // Identify target position in formation -> shortest distance from current position.
-    if (forming == true)
+    if (state == DEPLOYING)
     {
-        double meter;
-        x_target = formation[0];
-        y_target = formation[1];
-        for (int k=2; k < formation.size(); k+=2)
-        {
-            meter = sqrt(pow((x_target-x_pos),2)+pow((y_target-y_pos),2));
-            if (meter < targetDist)
-            {
-                targetDist = meter;
-                x_target = formation[k];
-                y_target = formation[k+1];
-            }
-        }
-        forming = false;
+        x_target = formation[id*2-1];
+        y_target = formation[id*2];
+        x_cur = start_pos[0];
+        y_cur = start_pos[1];
+        state = FORMING;
+        cout<<"Target position for node "<<id<<": ("<<x_target<<", "<<y_target<<")"<<endl;
     }
-    int x_dist = x_target - x_pos;
-    int y_dist = y_target - y_pos;
-    // Check if the target is to the left of node. Subtract velocity component in x direction.
-    if  (x_dist < 0)
+    else if (state == FORMING)
     {
-        if (x_dist < speed)
+        cout<<"Node "<<id<<" moving into target formation."<<endl;
+        dist_2_xtarget = x_target - x_cur;
+        dist_2_ytarget = y_target - y_cur;
+        distance = sqrt(pow(dist_2_xtarget,2)+pow(dist_2_ytarget,2));
+        vector<double> delta_pos = {speed*dist_2_xtarget/distance, speed*dist_2_ytarget/distance};
+        if (sqrt(pow(delta_pos[0],2)+pow(delta_pos[1],2)) >= distance)
         {
-            x_pos = x_target;
+            x_cur = x_target;
+            y_cur = y_target;
+        } else
+        {
+            x_cur = x_cur + delta_pos[0];
+            y_cur = y_cur + delta_pos[1];
         }
-        else
+        if (x_cur == x_target && y_cur == y_target)
         {
-            x_pos -= speed;
-        }
-    }
-    // Check if the target is to the right of node. Add velocity component in x direction.
-    else if (x_dist > 0)
-    {
-        if (x_dist < speed)
-        {
-            x_pos = x_target;
-        }
-        else
-        {
-            x_pos += speed;
-        }
-    }
-    // Check if the target is below the node. Subtract velocity component in the y direction.
-    if (y_dist < 0)
-    {
-        if (y_dist < speed)
-        {
-            y_pos = y_target;
-        }
-        else
-        {
-            y_pos -= speed;
-        }
-    }
-    // Check if the target is above the node. Add velocity componenet in the y direction.
-    else if (y_dist > 0)
-    {
-        if (y_dist < speed)
-        {
-            y_pos = y_target;
-        }
-        else
-        {
-            y_pos += speed;
+            state = WAITING;
         }
     }
 }
@@ -132,22 +97,34 @@ void Autonode::output_func(adevs::Bag<int>& yb){}
 // Time advance function.
 double Autonode::ta()
 {
-    return 1.0;
-    //return time;
+    if (state == DEPLOYING || state == FORMING)
+    {
+        delta_time = 1.0;
+    }
+    else if (state == WAITING)
+    {
+        delta_time = DBL_MAX;
+    }
+    return delta_time;
 }
 
 // Garbage collection
-void Autonode::gc_output(adevs::Bag<int>&){}
+void Autonode::gc_output(adevs::Bag<int>&)
+{
+
+}
 
 Autonode::~Autonode(){}
 
+NodeState Autonode::getState(){return state;}
+
 double Autonode::get_xpos()
 {
-    return x_pos;
+    return x_cur;
 }
 double Autonode::get_ypos()
 {
-    return y_pos;
+    return y_cur;
 }
 double Autonode::get_target_x()
 {
@@ -165,7 +142,7 @@ void Autonode::set_time(double time)
 {
     time = time;
 }
-void Autonode::set_formation(std::vector<int> formation)
+void Autonode::set_formation(vector<int> formation)
 {
     formation = formation;
 }

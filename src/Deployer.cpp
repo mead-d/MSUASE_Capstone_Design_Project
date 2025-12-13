@@ -34,35 +34,30 @@
 using namespace adevs;
 using namespace std;
 
-Deployer::Deployer(unsigned int seed, int env_length, int env_width, std::vector<Autonode*>& nodeList):Atomic<int>(),
+Deployer::Deployer(unsigned int seed, int env_length, int env_width, vector<Autonode*>& nodeList):Atomic<int>(),
 env_length(env_length),
-env_width(env_width),
-nodeID(1)
+env_width(env_width)
 {
+    state = EVACUATING;
     if (seed > 0)
     {
         srand(seed);
     }
-    std::vector<int> formation = {-2,2,0,2,2,2,-2,-2,0,-2,2,-2};
+    vector<int> formation = {-2,2,0,2,2,2,-2,-2,0,-2,2,-2};
     for (int i=0; i < nNodes; i++)
     {
         // Create autonode and append to vector
-        nodeList.push_back(new Autonode(nodeID, (rand() % env_length - env_length/2), (rand() % env_width - env_width/2), formation));
+        nodeList.push_back(new Autonode(i+1, (rand() % env_length - env_length/2), (rand() % env_width - env_width/2), formation));
 
         // Add autonode activation time (1 sec)
         nodeList[i]->set_time(1.0);
-        // Increment unique node id
-        nodeID++;
     }
     //cout<<"Autonodes deployed: "<<nodeList.size()<<endl;
-    time = DBL_MAX;
+    state = STANDBY;
 }
 
 // Internal transition
-void Deployer::delta_int()
-{
-
-}
+void Deployer::delta_int(){}
 // External transition. Will execute when batch of new nodes ordered.
 void Deployer::delta_ext(double e, const adevs::Bag<int>& xb) {}
 // Confluent transition.
@@ -76,7 +71,17 @@ void Deployer::output_func(adevs::Bag<int>& yb) {}
 // Time advance function.
 double Deployer::ta()
 {
-    return time;
+    if (state == EVACUATING)
+    {
+        delta_time = 1.0;
+    }
+    else if (state == STANDBY)
+    {
+        delta_time = DBL_MAX;
+    }
+    return delta_time;
 }
 // Garbage collection
 void Deployer::gc_output(adevs::Bag<int>&){}
+
+DeployerState Deployer::getState(){return state;}

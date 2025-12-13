@@ -34,6 +34,15 @@
 #include "adevs.h"
 #include <vector>
 
+// State structure of a node
+typedef enum
+{
+    DEPLOYING,
+    FORMING,
+    WAITING
+}
+NodeState;
+
 
  /**
   * @brief This class models an autonomous node that exists in a 2-dimensional plane.
@@ -61,6 +70,7 @@ class Autonode: public adevs::Atomic<int>
         ~Autonode();
         
         // Getters
+        NodeState getState();
         double get_xpos();
         double get_ypos();
         double get_target_x();
@@ -68,15 +78,19 @@ class Autonode: public adevs::Atomic<int>
         int get_id();
         // Setters
         void set_time(double time);
-        void set_formation(std::vector<int> x);
+        void set_formation(vector<int> x);
     protected:
+        // State of the node
+        NodeState state;
+    private:
         // Time until next action
-        double time = 1.0;
-        double time_on_target = DBL_MAX;
+        double delta_time = 1.0;
         // unique id
         int id;
         // Node position & target position
-        int x_pos, y_pos, x_target=0, y_target=0;
+        vector<double> start_pos = {0,0};
+        double x_cur, y_cur, dist_2_xtarget, dist_2_ytarget, distance;
+        int x_target=0, y_target=0;
         // Array of swarm target positions
         std::vector<int> formation;
         // Distance between node and formation
@@ -85,7 +99,6 @@ class Autonode: public adevs::Atomic<int>
         int speed = 2;
         // Sensor radius
         double r_sensor = 3;
-        bool forming = false;
 };
 
 
