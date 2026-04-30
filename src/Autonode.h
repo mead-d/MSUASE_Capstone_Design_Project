@@ -33,6 +33,7 @@
 #define _Autonode_h_
 #include "adevs.h"
 #include <vector>
+#include "TargetSelector.h"
 
 // State structure of a node
 typedef enum
@@ -51,8 +52,8 @@ NodeState;
 class Autonode: public adevs::Atomic<int>
 {
     public:
-        Autonode();
-        Autonode(int id, int x, int y, std::vector<int> formation);
+        //Autonode();
+        Autonode(int id, std::vector<Point>& start_positions, std::vector<Point>& formation);
 
         // Internal transition function.
         void delta_int();
@@ -76,6 +77,9 @@ class Autonode: public adevs::Atomic<int>
         double get_target_x();
         double get_target_y();
         int get_id();
+        //vector<double> get_time_onStation();
+        double get_time_onStation();
+        double get_time_deployment();
         // Setters
         void set_time(double time);
         void set_formation(vector<int> x);
@@ -85,21 +89,22 @@ class Autonode: public adevs::Atomic<int>
     private:
         // Time until next action
         double delta_time = 1.0;
+        double time_deployed;
+        double time_start_maneuver;
+        double time_active = 0.0;
+        double time_onStation;
+
         // unique id
         int id;
-        // Node position & target position
-        vector<double> start_pos = {0,0};
         double x_cur, y_cur, dist_2_xtarget, dist_2_ytarget, distance;
-        int x_target=0, y_target=0;
-        // Array of swarm target positions
-        std::vector<int> formation;
+        double x_target, y_target;
+        vector<Point> start_positions;
+        vector<Point> formation;
         // Distance between node and formation
         double targetDist = DBL_MAX;
         // Standard rate of travel (cell/sec)
         int speed = 2;
         // Sensor radius
-        double r_sensor = 3;
+        double r_sensor = 5;
 };
-
-
 #endif

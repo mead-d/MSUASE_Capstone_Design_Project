@@ -33,16 +33,20 @@
 #include "Autonode.h"
 #include <cmath>
 #include <vector>
+#include "TargetSelector.h"
+
 using namespace adevs;
 using namespace std;
 
-Autonode::Autonode(int id, int x, int y, std::vector<int> formation):Atomic<int>(),
+Autonode::Autonode(int id, std::vector<Point>& start_positions, std::vector<Point>& formation):Atomic<int>(),
 id(id),
+start_positions(start_positions),
 formation(formation)
 {
     state=DEPLOYING;
-    start_pos[0] = x;
-    start_pos[1] = y;
+    time_deployed = 0.0;
+    x_cur = start_positions[id].x;
+    y_cur = start_positions[id].y;
 }
 
 // Internal transition function.
@@ -51,11 +55,11 @@ void Autonode::delta_int()
     // Identify target position in formation -> shortest distance from current position.
     if (state == DEPLOYING)
     {
-        x_target = formation[id*2-1];
-        y_target = formation[id*2];
-        x_cur = start_pos[0];
-        y_cur = start_pos[1];
+        int target_index = getMyTarget_greedy(id, start_positions, formation);
+        x_target = formation[target_index].x;
+        y_target = formation[target_index].y;
         state = FORMING;
+        time_start_maneuver = time_deployed + delta_time;
         cout<<"Target position for node "<<id<<": ("<<x_target<<", "<<y_target<<")"<<endl;
     }
     else if (state == FORMING)
@@ -69,14 +73,18 @@ void Autonode::delta_int()
         {
             x_cur = x_target;
             y_cur = y_target;
+            time_active += delta_time;
         } else
         {
             x_cur = x_cur + delta_pos[0];
             y_cur = y_cur + delta_pos[1];
+            time_active += delta_time;
         }
         if (x_cur == x_target && y_cur == y_target)
         {
             state = WAITING;
+            time_onStation = time_active; //time_onStation.push_back(time_active);
+            time_active = 0.0;
         }
     }
 }
@@ -137,6 +145,14 @@ double Autonode::get_target_y()
 int Autonode::get_id()
 {
     return id;
+}
+double Autonode::get_time_onStation()
+{
+    return time_onStation;
+}
+double Autonode::get_time_deployment()
+{
+    return time_start_maneuver;
 }
 void Autonode::set_time(double time)
 {

@@ -31,10 +31,11 @@
 #include "adevs.h"
 #include "Deployer.h"
 #include <cmath>
+#include "TargetSelector.h"
 using namespace adevs;
 using namespace std;
 
-Deployer::Deployer(unsigned int seed, int env_length, int env_width, vector<Autonode*>& nodeList):Atomic<int>(),
+Deployer::Deployer(unsigned int seed, int env_length, int env_width, int nNodes, vector<Autonode*>& nodeList, vector<Point>& formation):Atomic<int>(),
 env_length(env_length),
 env_width(env_width)
 {
@@ -43,14 +44,20 @@ env_width(env_width)
     {
         srand(seed);
     }
-    vector<int> formation = {-2,2,0,2,2,2,-2,-2,0,-2,2,-2};
+
+    vector<Point> all_start_positions;
     for (int i=0; i < nNodes; i++)
     {
+        all_start_positions.push_back(Point{(double)(rand() % env_length - env_length/2.0), (double)(rand() % env_width - env_width/2.0)});
+    }
+
+    for (id; id < nNodes; id++)
+    {
         // Create autonode and append to vector
-        nodeList.push_back(new Autonode(i+1, (rand() % env_length - env_length/2), (rand() % env_width - env_width/2), formation));
+        nodeList.push_back(new Autonode(id, all_start_positions, formation));
 
         // Add autonode activation time (1 sec)
-        nodeList[i]->set_time(1.0);
+        nodeList[id]->set_time(1.0);
     }
     //cout<<"Autonodes deployed: "<<nodeList.size()<<endl;
     state = STANDBY;

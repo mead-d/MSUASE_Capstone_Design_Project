@@ -31,6 +31,7 @@
 #include "adevs.h"
 #include "Autonode.h"
 #include "Deployer.h"
+#include "TargetSelector.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -43,17 +44,23 @@ int main(int argc, char** argv)
 {
     int env_length = 20;
     int env_width = 20;
+    int nNodes = 30;
     
     unsigned int seed = -1; // Set seed iff seed > 0. Else random.
-
-    std::ofstream dataFile("Plots/LCANsim_v1-1_data.csv");
-    dataFile<<"Node, x_pos, y_pos, target_x, target_y\n";
-
+    
     // dynamic list of autonomous nodes
     vector<Autonode*> nodeList;
+    
+    // dynamic list of target formation
+    vector<Point> target_formation;
+
+    for (int i=0; i < nNodes; i++)
+    {
+        target_formation.push_back(Point{(double)(rand() % env_length - env_length/2.0), (double)(rand() % env_width - env_width/2.0)});
+    }
 
     // Create a digraph model with deployer and node models
-    Deployer* deployer = new Deployer(seed, env_length, env_width, nodeList);
+    Deployer* deployer = new Deployer(seed, env_length, env_width, nNodes, nodeList, target_formation);
     SimpleDigraph<int>* model = new SimpleDigraph<int>();
     model->add(deployer);
     for (int i=0; i < nodeList.size(); i++)
@@ -70,21 +77,36 @@ int main(int argc, char** argv)
             }
         }
     }
-
+    
+    ofstream dataFile("Plots/LCANsim_v1-2-2_data.csv");
+    dataFile<<"Node, x_pos, y_pos, target_x, target_y"<<endl;
+    
     Simulator<int>* sim = new Simulator<int>(model);
     int sim_length = 20; // runtime of sim in seconds
     //cout<<"Simulation Start Time: "<<sim->nextEventTime()<<endl;
     while (sim->nextEventTime() < sim_length)
     {
+        for (int i=0; i < nodeList.size(); i++)
+        {
+            
+        }
         sim->execNextEvent();
         for (int i=0; i<nodeList.size(); i++)
         {
             //cout<<"Node "<<nodeList[i]->get_id()<<" is at location ("<<nodeList[i]->get_xpos()<<", "<<nodeList[i]->get_ypos()<<") and moving to target ("<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<")"<<endl;
-            dataFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_xpos()<<", "<<nodeList[i]->get_ypos()<<", "<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<"\n";
+            dataFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_xpos()<<", "<<nodeList[i]->get_ypos()<<", "<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<endl;
         }
         //cout<<"Sim Event Time: "<<sim->nextEventTime()<<endl;
     }
     cout<<"\nSimulation exited."<<endl;
     dataFile.close();
+
+    ofstream timeFile("Plots/LCANsim_v1-2-2_time.csv");
+    timeFile<<"Node, Deployment time, Time on Station"<<endl;
+    for (int i=0; i<nodeList.size(); i++)
+    {
+        timeFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_time_deployment()<<", "<<nodeList[i]->get_time_onStation()<<endl;
+    }
+    timeFile.close();
     return 0;
 }

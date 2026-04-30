@@ -35,6 +35,7 @@
  #include "Autonode.h"
  #include <stdlib.h>
  #include <vector>
+ #include "TargetSelector.h"
 
  // State structure of deployment carrier
  typedef enum
@@ -56,7 +57,7 @@ class Deployer: public adevs::Atomic<int>
          * The deployer requires a seed as input to determine a node's starting position.
          * An empty list of nodes, and environment dimensions are necessary as well.
          */
-        Deployer(unsigned int seed, int env_length, int env_width, std::vector<Autonode*>& nodeList);
+        Deployer(unsigned int seed, int env_length, int env_width, int nNodes, std::vector<Autonode*>& nodeList, std::vector<Point>& formation);
 
         // Internal transition
         void delta_int();
@@ -81,10 +82,8 @@ class Deployer: public adevs::Atomic<int>
         double delta_time = 1.0;
         // Environment dimensions
         int env_length, env_width;
-        // List and Num of nodes to deploy
-        //std::vector<Autonode*> nodeList;
-        std::vector<int> formation;
-        int nNodes = 6;
+        // unique node id
+        int id=0;
 };
 
 #endif
