@@ -37,31 +37,113 @@
 #include <string>
 #include <vector>
 #include <cmath>
+
 using namespace std;
 using namespace adevs;
 
+std::vector<Point> pointsOnCircle(int n) {
+    const double spacing = 10.0;
+    std::vector<Point> points;
+    
+    if (n <= 0) return points;
+
+    // 1. Calculate the required perimeter and radius
+    double perimeter = n * spacing;
+    double radius = perimeter / (2.0 * M_PI);
+
+    // 2. Generate points using polar coordinates
+    for (int i = 0; i < n; ++i) {
+        // Angle in radians: (current_point / total_points) * 2PI
+        double angle = i * (2.0 * M_PI / n);
+        
+        double x = radius * std::cos(angle);
+        double y = radius * std::sin(angle);
+        
+        points.push_back({x, y});
+    }
+    return points;
+}
+
+std::vector<Point> pointsOnRectangle(int n, int segmentsWide) {
+    const double spacing = 10.0;
+    std::vector<Point> points;
+
+    // Validation: n must be even, at least 4, and wide enough to accommodate segmentsWide
+    if (n % 2 != 0)
+    {
+        points.push_back({0, 0});
+    }
+    else if (n < 4 || segmentsWide >= n / 2) {
+        std::cerr << "Invalid point count for a rectangle." << std::endl;
+        return points;
+    }
+
+    int segmentsHigh = (n / 2) - segmentsWide;
+    double width = segmentsWide * spacing;
+    double height = segmentsHigh * spacing;
+
+    double offsetX = width / 2.0;
+    double offsetY = height / 2.0;
+
+    // Traverse the perimeter
+    double curX = 0, curY = 0;
+
+    for (int i = 0; i < n; ++i) {
+        points.push_back({curX - offsetX, curY - offsetY});
+
+        if (i < segmentsWide) { 
+            curX += spacing; // Top edge
+        } else if (i < segmentsWide + segmentsHigh) { 
+            curY += spacing; // Right edge
+        } else if (i < (2 * segmentsWide) + segmentsHigh) { 
+            curX -= spacing; // Bottom edge
+        } else { 
+            curY -= spacing; // Left edge
+        }
+    }
+
+    return points;
+}
+
 int main(int argc, char** argv)
 {
-    int env_length = 20;
-    int env_width = 20;
-    int nNodes = 30;
+    int sim_length = 120; // runtime of sim in seconds
+    int env_length = 100;
+    int env_width = 100;
+    int nNodes = 20;
     
     unsigned int seed = -1; // Set seed iff seed > 0. Else random.
     
     // dynamic list of autonomous nodes
     vector<Autonode*> nodeList;
     
+    // Create a digraph model with deployer and node models
+    
     // dynamic list of target formation
-    vector<Point> target_formation;
+    vector<Point> rand_formation;
+    vector<Point> circle_formation;
+    vector<Point> rect_formation;
+
+    std::vector<Point> circPoints = pointsOnCircle(nNodes);
+    for (const auto& p : circPoints)
+    {
+        circle_formation.push_back(p);
+    }
+
+    int wide = ceil(nNodes/3.0);
+    std::vector<Point> rectPoints = pointsOnRectangle(nNodes, wide);
+    for (const auto& p : rectPoints)
+    {
+        rect_formation.push_back(p);
+    }
 
     for (int i=0; i < nNodes; i++)
     {
-        target_formation.push_back(Point{(double)(rand() % env_length - env_length/2.0), (double)(rand() % env_width - env_width/2.0)});
+        rand_formation.push_back(Point{(double)(rand() % env_length - env_length/2.0), (double)(rand() % env_width - env_width/2.0)});
     }
 
-    // Create a digraph model with deployer and node models
-    Deployer* deployer = new Deployer(seed, env_length, env_width, nNodes, nodeList, target_formation);
-    SimpleDigraph<int>* model = new SimpleDigraph<int>();
+    Deployer* deployer = new Deployer(seed, env_length, env_width, nNodes, nodeList, rect_formation);
+    SimpleDigraph<Output>* model = new SimpleDigraph<Output>();
     model->add(deployer);
     for (int i=0; i < nodeList.size(); i++)
     {
@@ -78,18 +160,13 @@ int main(int argc, char** argv)
         }
     }
     
-    ofstream dataFile("Plots/LCANsim_v1-2-2_data.csv");
+    ofstream dataFile("Plots/LCANsim_v1-3_data.csv");
     dataFile<<"Node, x_pos, y_pos, target_x, target_y"<<endl;
     
-    Simulator<int>* sim = new Simulator<int>(model);
-    int sim_length = 20; // runtime of sim in seconds
+    Simulator<Output>* sim = new Simulator<Output>(model);
     //cout<<"Simulation Start Time: "<<sim->nextEventTime()<<endl;
     while (sim->nextEventTime() < sim_length)
     {
-        for (int i=0; i < nodeList.size(); i++)
-        {
-            
-        }
         sim->execNextEvent();
         for (int i=0; i<nodeList.size(); i++)
         {
@@ -101,12 +178,20 @@ int main(int argc, char** argv)
     cout<<"\nSimulation exited."<<endl;
     dataFile.close();
 
-    ofstream timeFile("Plots/LCANsim_v1-2-2_time.csv");
+    ofstream costMatrixFile("Plots/cost_matrices_v1-3.csv");
+    ofstream timeFile("Plots/LCANsim_v1-3_time.csv");
     timeFile<<"Node, Deployment time, Time on Station"<<endl;
     for (int i=0; i<nodeList.size(); i++)
     {
+        costMatrixFile<<"Node id: "<<nodeList[i]->get_id()<<endl;
+        vector<Edge> matrix = nodeList[i]->get_cost_matrix();
+        for (const auto& edge : matrix)
+        {
+            costMatrixFile<<"["<<edge.node_id<<", "<<edge.target_id<<", "<<edge.dist_sq<<endl;
+        }
         timeFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_time_deployment()<<", "<<nodeList[i]->get_time_onStation()<<endl;
     }
+    costMatrixFile.close();
     timeFile.close();
     return 0;
 }

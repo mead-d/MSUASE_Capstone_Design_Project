@@ -35,7 +35,7 @@
 using namespace adevs;
 using namespace std;
 
-Deployer::Deployer(unsigned int seed, int env_length, int env_width, int nNodes, vector<Autonode*>& nodeList, vector<Point>& formation):Atomic<int>(),
+Deployer::Deployer(unsigned int seed, int env_length, int env_width, int nNodes, vector<Autonode*>& nodeList, vector<Point>& formation):Atomic<Output>(),
 env_length(env_length),
 env_width(env_width)
 {
@@ -51,7 +51,7 @@ env_width(env_width)
         all_start_positions.push_back(Point{(double)(rand() % env_length - env_length/2.0), (double)(rand() % env_width - env_width/2.0)});
     }
 
-    for (id; id < nNodes; id++)
+    for (; id < nNodes; id++)
     {
         // Create autonode and append to vector
         nodeList.push_back(new Autonode(id, all_start_positions, formation));
@@ -66,15 +66,15 @@ env_width(env_width)
 // Internal transition
 void Deployer::delta_int(){}
 // External transition. Will execute when batch of new nodes ordered.
-void Deployer::delta_ext(double e, const adevs::Bag<int>& xb) {}
+void Deployer::delta_ext(double e, const adevs::Bag<Output>& xb) {}
 // Confluent transition.
-void Deployer::delta_conf(const adevs::Bag<int>& xb)
+void Deployer::delta_conf(const adevs::Bag<Output>& xb)
 {
     delta_int();
     delta_ext(0.0, xb);
 }
 // Output function produces the deployed nodes
-void Deployer::output_func(adevs::Bag<int>& yb) {}
+void Deployer::output_func(adevs::Bag<Output>& yb) {}
 // Time advance function.
 double Deployer::ta()
 {
@@ -89,6 +89,6 @@ double Deployer::ta()
     return delta_time;
 }
 // Garbage collection
-void Deployer::gc_output(adevs::Bag<int>&){}
+void Deployer::gc_output(adevs::Bag<Output>&){}
 
 DeployerState Deployer::getState(){return state;}

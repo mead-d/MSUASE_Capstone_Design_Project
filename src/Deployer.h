@@ -50,7 +50,7 @@
   * The deployer will also drop off replacement nodes.
   */
 
-class Deployer: public adevs::Atomic<int>
+class Deployer: public adevs::Atomic<Output>
 {
     public:
         /**
@@ -62,15 +62,15 @@ class Deployer: public adevs::Atomic<int>
         // Internal transition
         void delta_int();
         // External transition. Will execute when batch of new nodes ordered.
-        void delta_ext(double e, const adevs::Bag<int>& xb);
+        void delta_ext(double e, const adevs::Bag<Output>& xb);
         // Confluent transition.
-        void delta_conf(const adevs::Bag<int>& xb);
+        void delta_conf(const adevs::Bag<Output>& xb);
         // Output function produces the deployed nodes
-        void output_func(adevs::Bag<int>& yb);
+        void output_func(adevs::Bag<Output>& yb);
         // Time advance function.
         double ta();
         // Garbage collection
-        void gc_output(adevs::Bag<int>&);
+        void gc_output(adevs::Bag<Output>&);
 
         DeployerState getState();
     protected:

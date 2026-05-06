@@ -5,28 +5,8 @@
 #include <unordered_set>
 #include "TargetSelector.h"
 
-struct Edge {
-    int node_id;
-    int target_id;
-    double dist_sq; // Use squared distance to avoid sqrt() floating-point drift
-
-    // STRICT DETERMINISM: Crucial for distributed system
-    bool operator<(const Edge& other) const {
-        // 1. Sort by distance
-        if (std::abs(dist_sq - other.dist_sq) > 1e-9) {
-            return dist_sq < other.dist_sq;
-        }
-        // 2. Tie-breaker: Node ID
-        if (node_id != other.node_id) {
-            return node_id < other.node_id;
-        }
-        // 3. Tie-breaker: Target ID
-        return target_id < other.target_id;
-    }
-};
-
 // Function runs on EVERY node
-int getMyTarget_greedy(int node_id, 
+Data getMyTarget_greedy(int node_id, 
                 std::vector<Point>& all_nodes, 
                 std::vector<Point>& all_targets) {
     
@@ -66,5 +46,5 @@ int getMyTarget_greedy(int node_id,
         }
     }
 
-    return my_assigned_target;
+    return Data{my_assigned_target, edges};
 }

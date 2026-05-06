@@ -44,12 +44,14 @@ typedef enum
 }
 NodeState;
 
+struct Output { int id; Point point; };
+
 
  /**
   * @brief This class models an autonomous node that exists in a 2-dimensional plane.
   * The node is one of many in a larger swarm. Each node stands guard passively sensing in the assigned environment.
   */
-class Autonode: public adevs::Atomic<int>
+class Autonode: public adevs::Atomic<Output>
 {
     public:
         //Autonode();
@@ -58,31 +60,32 @@ class Autonode: public adevs::Atomic<int>
         // Internal transition function.
         void delta_int();
         // External transition function.
-        void delta_ext(double e, const adevs::Bag<int>& xb);
+        void delta_ext(double e, const adevs::Bag<Output>& xb);
         // Confluent transition function.
-        void delta_conf(const adevs::Bag<int>& xb);
+        void delta_conf(const adevs::Bag<Output>& xb);
         // Output function.
-        void output_func(adevs::Bag<int>& yb);
+        void output_func(adevs::Bag<Output>& yb);
         // Time advance function.
         double ta();
         // Garbage collection
-        void gc_output(adevs::Bag<int>&);
+        void gc_output(adevs::Bag<Output>&);
         // Destructor
         ~Autonode();
         
         // Getters
         NodeState getState();
+        int get_id();
         double get_xpos();
         double get_ypos();
         double get_target_x();
         double get_target_y();
-        int get_id();
-        //vector<double> get_time_onStation();
+        vector<Edge> get_cost_matrix();
         double get_time_onStation();
         double get_time_deployment();
         // Setters
         void set_time(double time);
-        void set_formation(vector<int> x);
+        void set_state(NodeState state);
+        void set_formation(vector<Point>& formation);
     protected:
         // State of the node
         NodeState state;
@@ -100,6 +103,7 @@ class Autonode: public adevs::Atomic<int>
         double x_target, y_target;
         vector<Point> start_positions;
         vector<Point> formation;
+        vector<Edge> cost_matrix;
         // Distance between node and formation
         double targetDist = DBL_MAX;
         // Standard rate of travel (cell/sec)
