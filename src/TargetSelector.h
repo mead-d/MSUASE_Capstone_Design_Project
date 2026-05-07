@@ -25,7 +25,7 @@ struct Edge {
     }
 };
 
-struct Data { int target; vector<Edge> cost_matrix; };
+struct Data { int target; std::vector<Edge> cost_matrix; };
 
 Data getMyTarget_greedy(int node_id, std::vector<Point>& all_nodes, std::vector<Point>& all_targets);
 

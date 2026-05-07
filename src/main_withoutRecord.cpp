@@ -32,8 +32,6 @@
 #include "Autonode.h"
 #include "Deployer.h"
 #include "TargetSelector.h"
-#include "SimulationWidget.h"
-#include <QApplication>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -109,12 +107,11 @@ std::vector<Point> pointsOnRectangle(int n, int segmentsWide) {
 
 int main(int argc, char** argv)
 {
-    bool enable_gui = false;
-
     int sim_length = 120; // runtime of sim in seconds
     int env_length = 100;
     int env_width = 100;
     int nNodes = 20;
+    
     unsigned int seed = -1; // Set seed iff seed > 0. Else random.
     
     // dynamic list of autonomous nodes
@@ -163,51 +160,38 @@ int main(int argc, char** argv)
         }
     }
     
+    ofstream dataFile("Plots/LCANsim_v1-3_data.csv");
+    dataFile<<"Node, x_pos, y_pos, target_x, target_y"<<endl;
+    
     Simulator<Output>* sim = new Simulator<Output>(model);
-    
-    if (enable_gui)
+    //cout<<"Simulation Start Time: "<<sim->nextEventTime()<<endl;
+    while (sim->nextEventTime() < sim_length)
     {
-        QApplication app(argc, argv);
-        
-        SimulationWidget* window = new SimulationWidget(sim, nodeList, env_length, env_width, sim_length);
-        window->resize(800,800);
-        window->setWindowTitle("LCANsim Animation");
-        window->show();
-        
-        return app.exec();
-    }
-    else
-    {
-        ofstream dataFile("Plots/LCANsim_v1-3_data.csv");
-        dataFile<<"Node, x_pos, y_pos, target_x, target_y"<<endl;
-        while (sim->nextEventTime() < sim_length)
-        {
-            sim->execNextEvent();
-            for (int i=0; i<nodeList.size(); i++)
-            {
-                //cout<<"Node "<<nodeList[i]->get_id()<<" is at location ("<<nodeList[i]->get_xpos()<<", "<<nodeList[i]->get_ypos()<<") and moving to target ("<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<")"<<endl;
-                dataFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_xpos()<<", "<<nodeList[i]->get_ypos()<<", "<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<endl;
-            }
-            //cout<<"Sim Event Time: "<<sim->nextEventTime()<<endl;
-        }
-        cout<<"\nSimulation exited."<<endl;
-        dataFile.close();
-    
-        ofstream costMatrixFile("Plots/cost_matrices_v1-3.csv");
-        ofstream timeFile("Plots/LCANsim_v1-3_time.csv");
-        timeFile<<"Node, Deployment time, Time on Station"<<endl;
+        sim->execNextEvent();
         for (int i=0; i<nodeList.size(); i++)
         {
-            costMatrixFile<<"Node id: "<<nodeList[i]->get_id()<<endl;
-            vector<Edge> matrix = nodeList[i]->get_cost_matrix();
-            for (const auto& edge : matrix)
-            {
-                costMatrixFile<<"["<<edge.node_id<<", "<<edge.target_id<<", "<<edge.dist_sq<<endl;
-            }
-            timeFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_time_deployment()<<", "<<nodeList[i]->get_time_onStation()<<endl;
+            //cout<<"Node "<<nodeList[i]->get_id()<<" is at location ("<<nodeList[i]->get_xpos()<<", "<<nodeList[i]->get_ypos()<<") and moving to target ("<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<")"<<endl;
+            dataFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_xpos()<<", "<<nodeList[i]->get_ypos()<<", "<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<endl;
         }
-        costMatrixFile.close();
-        timeFile.close();
+        //cout<<"Sim Event Time: "<<sim->nextEventTime()<<endl;
     }
+    cout<<"\nSimulation exited."<<endl;
+    dataFile.close();
+
+    ofstream costMatrixFile("Plots/cost_matrices_v1-3.csv");
+    ofstream timeFile("Plots/LCANsim_v1-3_time.csv");
+    timeFile<<"Node, Deployment time, Time on Station"<<endl;
+    for (int i=0; i<nodeList.size(); i++)
+    {
+        costMatrixFile<<"Node id: "<<nodeList[i]->get_id()<<endl;
+        vector<Edge> matrix = nodeList[i]->get_cost_matrix();
+        for (const auto& edge : matrix)
+        {
+            costMatrixFile<<"["<<edge.node_id<<", "<<edge.target_id<<", "<<edge.dist_sq<<endl;
+        }
+        timeFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_time_deployment()<<", "<<nodeList[i]->get_time_onStation()<<endl;
+    }
+    costMatrixFile.close();
+    timeFile.close();
     return 0;
 }

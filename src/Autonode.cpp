@@ -180,11 +180,11 @@ void Autonode::set_time(double time)
 {
     time = time;
 }
-void set_state(NodeState state)
+void Autonode::set_state(NodeState state)
 {
     state = state;
 }
-void set_formation(vector<Point>& formation)
+void Autonode::set_formation(vector<Point>& formation)
 {
     formation = formation;
 }
