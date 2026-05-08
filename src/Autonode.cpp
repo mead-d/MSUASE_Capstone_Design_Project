@@ -38,15 +38,15 @@
 using namespace adevs;
 using namespace std;
 
-Autonode::Autonode(int id, std::vector<Point>& start_positions, std::vector<Point>& formation):Atomic<Output>(),
+Autonode::Autonode(int id, std::vector<Point>& swarm_positions, std::vector<std::vector<Point>>& formations):Atomic<Output>(),
 id(id),
-start_positions(start_positions)
+swarm_positions(swarm_positions),
+formations(formations)
 {
-    set_formation(formation);
+    set_formation(formations[0]);
     set_state(DEPLOYING);
-    time_deployed = 0.0;
-    x_cur = start_positions[id].x;
-    y_cur = start_positions[id].y;
+    x_cur = swarm_positions[id].x;
+    y_cur = swarm_positions[id].y;
 }
 
 // Internal transition function.
@@ -55,17 +55,24 @@ void Autonode::delta_int()
     // Identify target position in formation -> shortest distance from current position.
     if (state == DEPLOYING)
     {
-        Data target_index = getMyTarget_greedy(id, start_positions, formation);
-        x_target = formation[target_index.target].x;
-        y_target = formation[target_index.target].y;
-        cost_matrix = target_index.cost_matrix;
-        set_state(FORMING);
-        time_start_maneuver = time_deployed + delta_time;
-        cout<<"Target position for node "<<id<<": ("<<x_target<<", "<<y_target<<")"<<endl;
+        time_deployed = time(NULL);
+        //std::cout << "Node " << id << " sees " << formation.size() << " targets." << std::endl;
+
+        Data target_index = getMyTarget_greedy(id, swarm_positions, formation);
+        if (target_index.target != -1)
+        {
+            x_target = formation[target_index.target].x;
+            y_target = formation[target_index.target].y;
+            cost_matrix = target_index.cost_matrix;
+            set_state(FORMING);
+            time_selection = time(NULL) + delta_time;
+            time_start_maneuver = time_selection - time_deployed;
+            //cout<<"Target position for node "<<id<<": ("<<x_target<<", "<<y_target<<")"<<endl;
+        }
     }
     else if (state == FORMING)
     {
-        cout<<"Node "<<id<<" moving into target formation."<<endl;
+        //cout<<"Node "<<id<<" moving into target formation."<<endl;
         dist_2_xtarget = x_target - x_cur;
         dist_2_ytarget = y_target - y_cur;
         distance = sqrt(pow(dist_2_xtarget,2)+pow(dist_2_ytarget,2));
@@ -84,8 +91,41 @@ void Autonode::delta_int()
         if (x_cur == x_target && y_cur == y_target)
         {
             set_state(WAITING);
-            time_onStation = time_active; //time_onStation.push_back(time_active);
+            time_waiting = 0;
+            time_onStation = time_active + time_start_maneuver;
             time_active = 0.0;
+        }
+    }
+    else if (state == WAITING && !swarm_state.empty())
+    {
+        int nodes_waiting = 0;
+        for (int i=0; i < swarm_state.size(); i++)
+        {
+            if (swarm_state[i] == WAITING)
+            {
+                nodes_waiting++;
+            }
+        }
+        if (nodes_waiting == swarm_state.size() && time_waiting < time_idle)
+        {
+            time_waiting += delta_time;
+        }
+        else if (nodes_waiting == swarm_state.size() && time_waiting == time_idle)
+        {
+            for (int i=0; i < formations.size(); i++)
+            {
+                if (formations[i] == formation)
+                {
+                    if (i == formations.size()-1)
+                    {
+                        set_formation(formations[0]);
+                    } else
+                    {
+                        set_formation(formations[i+1]);
+                    }
+                    break;
+                }
+            }
         }
     }
 }
@@ -93,9 +133,13 @@ void Autonode::delta_int()
 // External transition function.
 void Autonode::delta_ext(double e, const adevs::Bag<Output>& xb)
 {
-    if (!start_positions.empty())
+    if (!swarm_positions.empty())
     {
-        start_positions.clear();
+        swarm_positions.clear();
+    }
+    if (!swarm_state.empty())
+    {
+        swarm_state.clear();
     }
     Bag<Output>::const_iterator i = xb.begin();
     for (; i != xb.end(); i++)
@@ -104,7 +148,8 @@ void Autonode::delta_ext(double e, const adevs::Bag<Output>& xb)
         {
             if ((*i).id == k)
             {
-                start_positions.push_back((*i).point);
+                swarm_positions.push_back((*i).point);
+                swarm_state.push_back((*i).state);
             }
         }
     }
@@ -120,7 +165,7 @@ void Autonode::delta_conf(const adevs::Bag<Output>& xb)
 // Output function.
 void Autonode::output_func(adevs::Bag<Output>& yb)
 {
-    yb.insert(Output{get_id(), Point{get_xpos(), get_ypos()}});
+    yb.insert(Output{get_id(), getState(), Point{get_xpos(), get_ypos()}});
 }
 
 // Time advance function.
@@ -141,50 +186,3 @@ double Autonode::ta()
 void Autonode::gc_output(adevs::Bag<Output>&){}
 
 Autonode::~Autonode(){}
-
-NodeState Autonode::getState(){return state;}
-
-double Autonode::get_xpos()
-{
-    return x_cur;
-}
-double Autonode::get_ypos()
-{
-    return y_cur;
-}
-double Autonode::get_target_x()
-{
-    return x_target;
-}
-double Autonode::get_target_y()
-{
-    return y_target;
-}
-vector<Edge> Autonode::get_cost_matrix()
-{
-    return cost_matrix;
-}
-int Autonode::get_id()
-{
-    return id;
-}
-double Autonode::get_time_onStation()
-{
-    return time_onStation;
-}
-double Autonode::get_time_deployment()
-{
-    return time_start_maneuver;
-}
-void Autonode::set_time(double time)
-{
-    time = time;
-}
-void Autonode::set_state(NodeState state)
-{
-    state = state;
-}
-void Autonode::set_formation(vector<Point>& formation)
-{
-    formation = formation;
-}

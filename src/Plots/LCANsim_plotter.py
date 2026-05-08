@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Define file names
-input_csv = 'LCANsim_v1-2-2_data.csv'
-output_image = 'forming_v1-2-2.jpeg'
+input_csv = 'LCANsim_v1-3-rand_data.csv'
+output_image = 'forming_v1-3-rand.jpeg'
 
 group_pos = {} # set of x, y positions sorted by id
 group_trgt = {} # set of target positions sorted by id

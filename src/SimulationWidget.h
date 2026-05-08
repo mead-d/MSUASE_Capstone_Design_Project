@@ -13,7 +13,7 @@ class SimulationWidget : public QWidget {
 public:
     // Initializes the widget with simulation data, environment bounds, and scaling
     SimulationWidget(adevs::Simulator<Output>* sim, 
-                     const std::vector<Autonode*>& nodes, 
+                     const std::vector<Autonode*>& nodes,
                      double env_length, 
                      double env_width, 
                      double sim_length,

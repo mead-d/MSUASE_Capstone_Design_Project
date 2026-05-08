@@ -5,12 +5,12 @@
 #include <iostream>
 
 SimulationWidget::SimulationWidget(adevs::Simulator<Output>* sim, 
-                                   const std::vector<Autonode*>& nodes, 
+                                   const std::vector<Autonode*>& nodes,
                                    double env_length, 
                                    double env_width, 
                                    double sim_length,
                                    QWidget *parent)
-    : QWidget(parent), m_sim(sim), m_nodes(nodes), 
+    : QWidget(parent), m_sim(sim), m_nodes(nodes),
       m_env_length(env_length), m_env_width(env_width), 
       m_sim_length(sim_length), m_scale(10.0), m_frameCount(0) 
 {
@@ -56,6 +56,8 @@ void SimulationWidget::recordFrame() {
 }
 
 void SimulationWidget::paintEvent(QPaintEvent *event) {
+    if (m_nodes.empty()) return;
+
     Q_UNUSED(event);
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);

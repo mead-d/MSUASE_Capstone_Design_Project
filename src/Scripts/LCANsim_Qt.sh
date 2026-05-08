@@ -1,10 +1,10 @@
 #!/bin/bash
 
-EXENAME=LCANsim_v1-3
+EXENAME=LCANsim_v1-3-animus
 
 moc ../SimulationWidget.h -o ../moc_SimulationWidget.cpp
 echo "Compiling LCANsim"
-g++ -fPIC -o ../$EXENAME \
+g++ -g -fPIC -o ../$EXENAME \
     ../main.cpp \
     ../SimulationWidget.cpp ../moc_SimulationWidget.cpp \
     ../Autonode.cpp ../Deployer.cpp ../TargetSelector.cpp \

@@ -35,7 +35,7 @@
 using namespace adevs;
 using namespace std;
 
-Deployer::Deployer(unsigned int seed, int env_length, int env_width, int nNodes, vector<Autonode*>& nodeList, vector<Point>& formation):Atomic<Output>(),
+Deployer::Deployer(unsigned int seed, int env_length, int env_width, int nNodes, vector<Autonode*>& nodeList, vector<vector<Point>>& formations):Atomic<Output>(),
 env_length(env_length),
 env_width(env_width)
 {
@@ -50,14 +50,17 @@ env_width(env_width)
     {
         all_start_positions.push_back(Point{(double)(rand() % env_length - env_length/2.0), (double)(rand() % env_width - env_width/2.0)});
     }
-
     for (; id < nNodes; id++)
     {
         // Create autonode and append to vector
-        nodeList.push_back(new Autonode(id, all_start_positions, formation));
+        nodeList.push_back(new Autonode(id, all_start_positions, formations));
 
         // Add autonode activation time (1 sec)
-        nodeList[id]->set_time(1.0);
+        nodeList[id]->set_deltaTime(1.0);
+    }
+    for (Autonode* node : nodeList)
+    {
+        node->set_formation(formations[0]);
     }
     //cout<<"Autonodes deployed: "<<nodeList.size()<<endl;
     state = STANDBY;

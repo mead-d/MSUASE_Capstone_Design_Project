@@ -57,7 +57,7 @@ class Deployer: public adevs::Atomic<Output>
          * The deployer requires a seed as input to determine a node's starting position.
          * An empty list of nodes, and environment dimensions are necessary as well.
          */
-        Deployer(unsigned int seed, int env_length, int env_width, int nNodes, std::vector<Autonode*>& nodeList, std::vector<Point>& formation);
+        Deployer(unsigned int seed, int env_length, int env_width, int nNodes, std::vector<Autonode*>& nodeList, std::vector<std::vector<Point>>& formations);
 
         // Internal transition
         void delta_int();

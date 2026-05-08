@@ -10,13 +10,17 @@ Data getMyTarget_greedy(int node_id,
                 std::vector<Point>& all_nodes, 
                 std::vector<Point>& all_targets) {
     
-    int N = all_nodes.size();
+    int numNodes = all_nodes.size();
+    int numTargets = all_targets.size();
+
+    if (numNodes == 0 || numTargets == 0) return {-1, {}};
+
     std::vector<Edge> edges;
-    edges.reserve(N * N);
+    edges.reserve(numNodes * numTargets);
 
     // Build the full N x N cost graph
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
+    for (int i = 0; i < numNodes; ++i) {
+        for (int j = 0; j < numTargets; ++j) {
             double dx = all_nodes[i].x - all_targets[j].x;
             double dy = all_nodes[i].y - all_targets[j].y;
             edges.push_back({i, j, (dx * dx) + (dy * dy)});
@@ -26,8 +30,8 @@ Data getMyTarget_greedy(int node_id,
     // Deterministic Sort
     std::sort(edges.begin(), edges.end());
 
-    std::vector<bool> node_assigned(N, false);
-    std::vector<bool> target_assigned(N, false);
+    std::vector<bool> node_assigned(numNodes, false);
+    std::vector<bool> target_assigned(numTargets, false);
     int my_assigned_target = -1;
 
     for (const auto& edge : edges) {

@@ -58,8 +58,8 @@ std::vector<Point> pointsOnCircle(int n) {
         // Angle in radians: (current_point / total_points) * 2PI
         double angle = i * (2.0 * M_PI / n);
         
-        double x = radius * std::cos(angle);
-        double y = radius * std::sin(angle);
+        double x = floor(radius * std::cos(angle));
+        double y = floor(radius * std::sin(angle));
         
         points.push_back({x, y});
     }
@@ -109,16 +109,18 @@ std::vector<Point> pointsOnRectangle(int n, int segmentsWide) {
 
 int main(int argc, char** argv)
 {
-    bool enable_gui = false;
+    bool enable_gui = true;
 
-    int sim_length = 120; // runtime of sim in seconds
+    int sim_length = 60; // runtime of sim in seconds
     int env_length = 100;
     int env_width = 100;
     int nNodes = 20;
     unsigned int seed = -1; // Set seed iff seed > 0. Else random.
+    srand(time(NULL));
     
     // dynamic list of autonomous nodes
     vector<Autonode*> nodeList;
+    nodeList.reserve(nNodes+1); // Ensure pointers in QT app are not dangling pointers
     
     // Create a digraph model with deployer and node models
     
@@ -127,14 +129,14 @@ int main(int argc, char** argv)
     vector<Point> circle_formation;
     vector<Point> rect_formation;
 
-    std::vector<Point> circPoints = pointsOnCircle(nNodes);
+    vector<Point> circPoints = pointsOnCircle(nNodes);
     for (const auto& p : circPoints)
     {
         circle_formation.push_back(p);
     }
 
     int wide = ceil(nNodes/3.0);
-    std::vector<Point> rectPoints = pointsOnRectangle(nNodes, wide);
+    vector<Point> rectPoints = pointsOnRectangle(nNodes, wide);
     for (const auto& p : rectPoints)
     {
         rect_formation.push_back(p);
@@ -145,8 +147,35 @@ int main(int argc, char** argv)
         rand_formation.push_back(Point{(double)(rand() % env_length - env_length/2.0), (double)(rand() % env_width - env_width/2.0)});
     }
 
-    Deployer* deployer = new Deployer(seed, env_length, env_width, nNodes, nodeList, rect_formation);
+    if (circle_formation.empty() || rect_formation.empty() || rand_formation.empty()) return 1;
+    vector<vector<Point>> formations = {circle_formation, rand_formation, rect_formation};
+
+    Deployer* deployer = new Deployer(seed, env_length, env_width, nNodes, nodeList, formations);
     SimpleDigraph<Output>* model = new SimpleDigraph<Output>();
+    ofstream formationData("Plots/LCANsim_v1-3-animus_formData.csv");
+    formationData<<"Index, x_coord, y_coord"<<endl;
+    formationData<<"Circle Formation"<<endl;
+    for (int i=0; i < circle_formation.size(); i++)
+    {
+        formationData<<i<<", "<<circle_formation[i].x<<", "<<circle_formation[i].y<<endl;
+    }
+    formationData<<"Rectangle Formation"<<endl;
+    for (int i=0; i < rect_formation.size(); i++)
+    {
+        formationData<<i<<", "<<rect_formation[i].x<<", "<<rect_formation[i].y<<endl;
+    }
+    formationData<<"Random Formation"<<endl;
+    for (int i=0; i < rand_formation.size(); i++)
+    {
+        formationData<<i<<", "<<rand_formation[i].x<<", "<<rand_formation[i].y<<endl;
+    }
+    formationData<<"Node Targets"<<endl;
+    for (int i=0; i < nodeList.size(); i++)
+    {
+        formationData<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_target_x()<<", "<<nodeList[i]->get_target_y()<<endl;
+    }
+    formationData.close();
+
     model->add(deployer);
     for (int i=0; i < nodeList.size(); i++)
     {
@@ -178,7 +207,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        ofstream dataFile("Plots/LCANsim_v1-3_data.csv");
+        ofstream dataFile("Plots/LCANsim_v1-3-animus_data.csv");
         dataFile<<"Node, x_pos, y_pos, target_x, target_y"<<endl;
         while (sim->nextEventTime() < sim_length)
         {
@@ -192,22 +221,23 @@ int main(int argc, char** argv)
         }
         cout<<"\nSimulation exited."<<endl;
         dataFile.close();
-    
-        ofstream costMatrixFile("Plots/cost_matrices_v1-3.csv");
-        ofstream timeFile("Plots/LCANsim_v1-3_time.csv");
-        timeFile<<"Node, Deployment time, Time on Station"<<endl;
-        for (int i=0; i<nodeList.size(); i++)
-        {
-            costMatrixFile<<"Node id: "<<nodeList[i]->get_id()<<endl;
-            vector<Edge> matrix = nodeList[i]->get_cost_matrix();
-            for (const auto& edge : matrix)
-            {
-                costMatrixFile<<"["<<edge.node_id<<", "<<edge.target_id<<", "<<edge.dist_sq<<endl;
-            }
-            timeFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_time_deployment()<<", "<<nodeList[i]->get_time_onStation()<<endl;
-        }
-        costMatrixFile.close();
-        timeFile.close();
     }
+
+    ofstream costMatrixFile("Plots/cost_matrices_v1-3-animus.csv");
+    costMatrixFile<<"Node, Target id, Square Distance"<<endl;
+    ofstream timeFile("Plots/LCANsim_v1-3-animus_time.csv");
+    timeFile<<"Node, Time Deployment, Time on Station"<<endl;
+    for (int i=0; i<nodeList.size(); i++)
+    {
+        costMatrixFile<<"Node id: "<<nodeList[i]->get_id()<<endl;
+        vector<Edge> matrix = nodeList[i]->get_cost_matrix();
+        for (const auto& edge : matrix)
+        {
+            costMatrixFile<<"["<<edge.node_id<<", "<<edge.target_id<<", "<<edge.dist_sq<<endl;
+        }
+        timeFile<<nodeList[i]->get_id()<<", "<<nodeList[i]->get_time_deploy()<<", "<<nodeList[i]->get_time_onStation()<<endl;
+    }
+    costMatrixFile.close();
+    timeFile.close();
     return 0;
 }

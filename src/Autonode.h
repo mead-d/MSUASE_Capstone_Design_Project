@@ -32,6 +32,7 @@
 #ifndef _Autonode_h_
 #define _Autonode_h_
 #include "adevs.h"
+#include <ctime>
 #include <vector>
 #include "TargetSelector.h"
 
@@ -44,7 +45,7 @@ typedef enum
 }
 NodeState;
 
-struct Output { int id; Point point; };
+struct Output { int id; NodeState state; Point point; };
 
 
  /**
@@ -55,7 +56,7 @@ class Autonode: public adevs::Atomic<Output>
 {
     public:
         //Autonode();
-        Autonode(int id, std::vector<Point>& start_positions, std::vector<Point>& formation);
+        Autonode(int id, std::vector<Point>& swarm_positions, std::vector<std::vector<Point>>& formations);
 
         // Internal transition function.
         void delta_int();
@@ -73,39 +74,51 @@ class Autonode: public adevs::Atomic<Output>
         ~Autonode();
         
         // Getters
-        NodeState getState();
-        int get_id();
-        double get_xpos();
-        double get_ypos();
-        double get_target_x();
-        double get_target_y();
-        vector<Edge> get_cost_matrix();
-        double get_time_onStation();
-        double get_time_deployment();
+        NodeState getState() {return state;}
+        int get_id() {return id;}
+        double get_xpos() {return x_cur;}
+        double get_ypos() {return y_cur;}
+        double get_target_x() {return x_target;}
+        double get_target_y() {return y_target;}
+        vector<Edge> get_cost_matrix() {return cost_matrix;}
+        double get_time_onStation(){return time_onStation;}
+        double get_time_deploy() {return time_start_maneuver;}
         // Setters
-        void set_time(double time);
-        void set_state(NodeState state);
-        void set_formation(vector<Point>& formation);
+        void set_deltaTime(double time) {this->delta_time = time;}
+        void set_state(NodeState state) {this->state = state;}
+        void set_formationList(vector<vector<Point>>& formations) {this->formations = formations;}
+        void set_formation(vector<Point>& formation) {this->formation = formation;}
+
     protected:
         // State of the node
         NodeState state;
     private:
         // Time until next action
         double delta_time = 1.0;
-        double time_deployed;
+        time_t time_deployed;
+        time_t time_selection;
         double time_start_maneuver;
         double time_active = 0.0;
         double time_onStation;
 
         // unique id
         int id;
+        vector<Point> swarm_positions;
+        vector<NodeState> swarm_state;
+        // List of different formations
+        std::vector<std::vector<Point>> formations;
+        // Current chosen formation
+        std::vector<Point> formation;
+        // Target selection cost matrix
+        vector<Edge> cost_matrix;
+
         double x_cur, y_cur, dist_2_xtarget, dist_2_ytarget, distance;
         double x_target, y_target;
-        vector<Point> start_positions;
-        vector<Point> formation;
-        vector<Edge> cost_matrix;
         // Distance between node and formation
         double targetDist = DBL_MAX;
+        // Time (sec) until next formation
+        const int time_idle = 3.0;
+        int time_waiting = 0;
         // Standard rate of travel (cell/sec)
         int speed = 2;
         // Sensor radius
